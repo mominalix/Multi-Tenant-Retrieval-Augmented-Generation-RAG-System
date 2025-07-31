@@ -2,6 +2,24 @@
 
 A production-grade **Multi-Tenant Retrieval-Augmented Generation (RAG) System** built with FastAPI, Qdrant, and Streamlit. This system provides secure, isolated RAG capabilities for multiple organizations with advanced document processing, vector search, and LLM integration.
 
+## Architecture
+
+### System Components
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Streamlit     │────│   FastAPI       │────│   PostgreSQL    │
+│   Frontend      │    │   Backend       │    │   Database      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                               │
+                               ├─────────────────────────────────┐
+                               │                                 │
+                    ┌─────────────────┐              ┌─────────────────┐
+                    │     Qdrant      │              │      Redis      │
+                    │ Vector Database │              │     Cache       │
+                    └─────────────────┘              └─────────────────┘
+```
+
 ## Features
 
 ### Backend Capabilities
@@ -91,23 +109,6 @@ python scripts/setup_sample_data.py
 - **Email**: user@acme.com
 - **Password**: user123
 
-##Architecture
-
-### System Components
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Streamlit     │────│   FastAPI       │────│   PostgreSQL    │
-│   Frontend      │    │   Backend       │    │   Database      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                               │
-                               ├─────────────────────────────────┐
-                               │                                 │
-                    ┌─────────────────┐              ┌─────────────────┐
-                    │     Qdrant      │              │      Redis      │
-                    │ Vector Database │              │     Cache       │
-                    └─────────────────┘              └─────────────────┘
-```
 
 ### Multi-Tenant Data Flow
 
