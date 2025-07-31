@@ -1,10 +1,10 @@
-#Multi-Tenant RAG System
+# Multi-Tenant RAG System
 
 A production-grade **Multi-Tenant Retrieval-Augmented Generation (RAG) System** built with FastAPI, Qdrant, and Streamlit. This system provides secure, isolated RAG capabilities for multiple organizations with advanced document processing, vector search, and LLM integration.
 
-##Features
+## Features
 
-###Backend Capabilities
+### Backend Capabilities
 - **Multi-Tenant Architecture**: Complete isolation between tenants with namespace-based data separation
 - **Vector Database**: Qdrant integration with tenant-aware document storage and retrieval
 - **LLM Integration**: Modular interface supporting OpenAI, Anthropic, and local models
@@ -13,21 +13,21 @@ A production-grade **Multi-Tenant Retrieval-Augmented Generation (RAG) System** 
 - **Async Processing**: Background document processing and concurrent request handling
 - **Horizontal Scaling**: Stateless services designed for Kubernetes deployment
 
-###Frontend Interface
+### Frontend Interface
 - **Streamlit UI**: Simple, detachable frontend for testing and demonstration
 - **Tenant Selection**: Easy switching between different tenant contexts
 - **Document Management**: Upload, process, and manage documents
 - **RAG Chat Interface**: Interactive query interface with source attribution
 - **Query History**: Track and analyze previous queries and responses
 
-###Security Features
+### Security Features
 - **Tenant Isolation**: Strict data separation preventing cross-tenant access
 - **JWT Authentication**: Secure token-based authentication with tenant context
 - **Role-Based Access**: Admin, user, and viewer roles with appropriate permissions
 - **Input Validation**: Comprehensive input validation and sanitization
 - **Environment Variables**: Secure configuration management
 
-##Quick Start
+## Quick Start
 
 ### Prerequisites
 - Docker and Docker Compose
@@ -124,7 +124,7 @@ python scripts/setup_sample_data.py
 - **API Level**: JWT tokens carry tenant context, validated on every request
 - **File Storage**: Uploaded files are stored with tenant prefixes
 
-##Development
+## Development
 
 ### Local Development Setup
 
@@ -179,7 +179,7 @@ isort app/ tests/
 flake8 app/ tests/
 ```
 
-##Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -202,7 +202,7 @@ Edit `docker-compose.yml` to customize:
 - Network configuration
 - Environment variables
 
-##Deployment
+## Deployment
 
 ### Production Deployment
 
@@ -240,7 +240,7 @@ docker stack deploy -c docker-compose.prod.yml rag-stack
 - [ ] Set up monitoring and logging
 - [ ] Regular security updates
 
-##Monitoring
+## Monitoring
 
 ### Health Checks
 - **API Health**: `GET /health`
