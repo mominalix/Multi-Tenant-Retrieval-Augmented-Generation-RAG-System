@@ -1,10 +1,11 @@
 # Multi-Tenant RAG System
 
-A production-grade **Multi-Tenant Retrieval-Augmented Generation (RAG) System** built with FastAPI, Qdrant, and Streamlit. This system provides secure, isolated RAG capabilities for multiple organizations with advanced document processing, vector search, and LLM integration.
+![Demo](./demo.gif)
+*Demo of the Multi-Tenant RAG System in action*
+
+A production-grade Multi-Tenant Retrieval-Augmented Generation (RAG) System built with FastAPI, Qdrant, and Streamlit. This system provides secure, isolated RAG capabilities for multiple organizations with advanced document processing, vector search, and LLM integration.
 
 ## Architecture
-
-### System Components
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -22,28 +23,26 @@ A production-grade **Multi-Tenant Retrieval-Augmented Generation (RAG) System** 
 
 ## Features
 
-### Backend Capabilities
-- **Multi-Tenant Architecture**: Complete isolation between tenants with namespace-based data separation
-- **Vector Database**: Qdrant integration with tenant-aware document storage and retrieval
-- **LLM Integration**: Modular interface supporting OpenAI, Anthropic, and local models
-- **Document Processing**: Support for PDF, TXT, and DOCX files with intelligent chunking
-- **Authentication**: JWT-based authentication with role-based access control
-- **Async Processing**: Background document processing and concurrent request handling
-- **Horizontal Scaling**: Stateless services designed for Kubernetes deployment
+**Core Capabilities**
+- Multi-tenant architecture with complete data isolation
+- Vector database integration using Qdrant
+- Support for multiple LLM providers (OpenAI, Anthropic, local models)
+- Document processing for PDF, TXT, and DOCX files
+- JWT-based authentication with role-based access control
+- Background document processing
+- Horizontal scaling for production deployments
 
-### Frontend Interface
-- **Streamlit UI**: Simple, detachable frontend for testing and demonstration
-- **Tenant Selection**: Easy switching between different tenant contexts
-- **Document Management**: Upload, process, and manage documents
-- **RAG Chat Interface**: Interactive query interface with source attribution
-- **Query History**: Track and analyze previous queries and responses
+**User Interface**
+- Clean web interface built with Streamlit
+- Document upload and management
+- Interactive chat interface with source attribution
+- Query history and analytics
 
-### Security Features
-- **Tenant Isolation**: Strict data separation preventing cross-tenant access
-- **JWT Authentication**: Secure token-based authentication with tenant context
-- **Role-Based Access**: Admin, user, and viewer roles with appropriate permissions
-- **Input Validation**: Comprehensive input validation and sanitization
-- **Environment Variables**: Secure configuration management
+**Security**
+- Strict tenant isolation at database and vector store level
+- Secure authentication with tenant context
+- Input validation and sanitization
+- Environment-based configuration management
 
 ## Quick Start
 
@@ -52,78 +51,54 @@ A production-grade **Multi-Tenant Retrieval-Augmented Generation (RAG) System** 
 - Python 3.11+ (for local development)
 - OpenAI API key (optional, for LLM functionality)
 
-### 1. Clone the Repository
+**1. Clone and Setup**
 ```bash
 git clone https://github.com/mominalix/Multi-Tenant-Retrieval-Augmented-Generation-RAG-System.git
 cd Multi-Tenant-Retrieval-Augmented-Generation-RAG-System
-```
-
-### 2. Configure Environment Variables
-```bash
-# Copy example environment file
 cp env.example .env
-
-# Edit .env file with your configuration
-# Add your OpenAI API key and other settings
+# Edit .env with your API keys and configuration
 ```
 
-### 3. Start the System
+**2. Start the System**
 ```bash
-# Start all services with Docker Compose
 docker-compose up -d
-
-# Wait for services to initialize (about 30-60 seconds)
-docker-compose logs -f backend
 ```
 
-### 4. Access the Applications
-- **Streamlit Frontend**: http://localhost:8501
-- **FastAPI Documentation**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
+**3. Access the Application**
+- Frontend: http://localhost:8501
+- API Docs: http://localhost:8000/docs
+- Health Check: http://localhost:8000/health
 
-### 5. Setup Sample Data (Optional)
+**4. Optional Sample Data**
 ```bash
-# Run the setup script to create sample tenants and users
 python scripts/setup_sample_data.py
 ```
 
-##Usage Guide
+## Usage Guide
 
-### Creating Your First Tenant
+**Getting Started**
+1. Navigate to http://localhost:8501
+2. Create a new organization or login with existing credentials
+3. Upload documents in the Documents section
+4. Wait for processing (runs in background)
+5. Ask questions in the Chat interface
 
-1. **Access the API Documentation** at http://localhost:8000/docs
-2. **Create an admin user** (you'll need to do this manually initially)
-3. **Create a tenant** using the `/api/v1/auth/tenants` endpoint
-4. **Create users** in the tenant using `/api/v1/auth/register`
+**Sample Credentials (with setup script)**
+- Email: user@acme.com
+- Password: user123
 
-### Using the Streamlit Interface
+**How It Works**
+1. User authenticates with tenant context
+2. Documents are uploaded and processed with tenant isolation
+3. Files are chunked, embedded, and stored in vector database
+4. Queries search only within tenant's document space
+5. LLM generates responses using retrieved context
 
-1. **Navigate** to http://localhost:8501
-2. **Login** with your tenant credentials
-3. **Upload documents** in the Documents section
-4. **Wait for processing** (documents are processed in the background)
-5. **Ask questions** in the Chat interface
-
-### Sample Login Credentials (if using setup script)
-- **Tenant**: Acme Corporation (subdomain: acme)
-- **Email**: user@acme.com
-- **Password**: user123
-
-
-### Multi-Tenant Data Flow
-
-1. **Authentication**: User authenticates with tenant context
-2. **Document Upload**: Files are uploaded and associated with tenant
-3. **Processing**: Documents are chunked, embedded, and stored in Qdrant with tenant metadata
-4. **RAG Query**: User queries are embedded and searched within tenant's document space
-5. **Response Generation**: LLM generates response using retrieved context
-
-### Tenant Isolation
-
-- **Database Level**: All models include `tenant_id` for row-level security
-- **Vector Store**: Qdrant uses metadata filtering for tenant isolation
-- **API Level**: JWT tokens carry tenant context, validated on every request
-- **File Storage**: Uploaded files are stored with tenant prefixes
+**Security Model**
+- Database-level tenant isolation with row-level security
+- Vector store uses metadata filtering for tenant separation
+- JWT tokens carry tenant context for all requests
+- File storage uses tenant-specific prefixes
 
 ## Development
 
@@ -265,59 +240,53 @@ The system uses structured logging with JSON format:
 ```
 
 
-##API Documentation
+## API Documentation
 
-### Authentication Endpoints
+**Authentication**
 - `POST /api/v1/auth/login` - User login
-- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/register` - User registration  
 - `GET /api/v1/auth/me` - Get current user info
 - `POST /api/v1/auth/tenants` - Create tenant (admin only)
 
-### Document Management
+**Document Management**
 - `POST /api/v1/documents/upload` - Upload document
 - `GET /api/v1/documents/` - List documents
 - `GET /api/v1/documents/{id}` - Get document details
 - `DELETE /api/v1/documents/{id}` - Delete document
 
-### RAG Queries
+**RAG Queries**
 - `POST /api/v1/queries/rag` - Submit RAG query
 - `POST /api/v1/queries/rag/stream` - Streaming RAG query
 - `GET /api/v1/queries/history` - Get query history
 
-##Troubleshooting
+## Troubleshooting
 
-### Common Issues
+**Common Issues**
 
-**1. Database Connection Errors**
+Database Connection Errors
 ```bash
-# Check if PostgreSQL is running
 docker-compose ps postgres
-
-# View database logs
 docker-compose logs postgres
 ```
 
-**2. Qdrant Connection Issues**
+Qdrant Connection Issues
 ```bash
-# Check Qdrant health
 curl http://localhost:6333/health
-
-# View Qdrant logs
 docker-compose logs qdrant
 ```
 
-**3. File Upload Failures**
-- Check file size limits
-- Verify upload directory permissions
-- Ensure supported file types
+File Upload Failures
+- Check file size limits (default 10MB)
+- Verify supported file types (PDF, TXT, DOCX)
+- Check upload directory permissions
 
-**4. LLM API Errors**
-- Verify API keys are set correctly
+LLM API Errors
+- Verify API keys in .env file
 - Check API rate limits
 - Ensure network connectivity
 
-### Debug Mode
-Enable debug mode for detailed error messages:
+**Debug Mode**
 ```bash
 export DEBUG=true
+docker-compose restart backend
 ```

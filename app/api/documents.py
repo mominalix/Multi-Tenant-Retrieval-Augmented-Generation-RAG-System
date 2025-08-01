@@ -26,12 +26,12 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 @router.post("/upload", response_model=DocumentResponse)
 async def upload_document(
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
-    metadata: Optional[str] = Form(None),
     current_user: CurrentUserDep,
     current_tenant: CurrentTenantDep,
     db: DatabaseDep,
-    document_service: DocumentServiceDep
+    document_service: DocumentServiceDep,
+    file: UploadFile = File(...),
+    metadata: Optional[str] = Form(None)
 ):
     """
     Upload a document for the current tenant
@@ -343,7 +343,7 @@ async def search_documents(
                 "source": result["source"],
                 "page_number": result.get("page_number"),
                 "chunk_index": result["chunk_index"],
-                "metadata": result["metadata"]
+                "doc_metadata": result["metadata"]
             }
             for result in search_results
         ]

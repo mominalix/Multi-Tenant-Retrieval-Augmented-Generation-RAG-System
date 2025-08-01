@@ -97,7 +97,7 @@ class DocumentService:
                 file_size=len(content),
                 file_path=str(file_path),
                 status="uploaded",
-                metadata=metadata or {}
+                doc_metadata=metadata or {}
             )
             
             db.add(document)
@@ -245,6 +245,8 @@ class DocumentService:
                     "chunk_id": str(chunk_record.id),
                     "text": chunk_data["text"],
                     "embedding": chunk_data["embedding"],
+                    "source": document.original_filename,  # Add source field
+                    "page_number": chunk_data.get("page_number"),
                     "metadata": {
                         "filename": document.original_filename,
                         "content_type": document.content_type,

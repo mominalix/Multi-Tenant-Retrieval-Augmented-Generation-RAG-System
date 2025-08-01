@@ -22,19 +22,25 @@ class QdrantVectorService:
     """
     
     def __init__(self):
-        # Initialize Qdrant clients
+        # Initialize Qdrant clients with HTTP (no SSL for local Docker)
         self.client = QdrantClient(
             host=settings.qdrant_host,
             port=settings.qdrant_port,
             api_key=settings.qdrant_api_key,
-            timeout=30.0
+            timeout=30.0,
+            prefer_grpc=False,  # Use HTTP instead of gRPC
+            https=False,  # Disable HTTPS for local Docker environment
+            check_compatibility=False  # Skip version compatibility check
         )
         
         self.async_client = AsyncQdrantClient(
             host=settings.qdrant_host,
             port=settings.qdrant_port,
             api_key=settings.qdrant_api_key,
-            timeout=30.0
+            timeout=30.0,
+            prefer_grpc=False,  # Use HTTP instead of gRPC
+            https=False,  # Disable HTTPS for local Docker environment
+            check_compatibility=False  # Skip version compatibility check
         )
         
         self.default_collection = "multi_tenant_documents"

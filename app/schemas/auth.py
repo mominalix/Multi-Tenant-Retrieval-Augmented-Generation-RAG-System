@@ -16,6 +16,22 @@ class UserCreate(BaseModel):
     role: str = Field(default="user")
 
 
+class OrganizationSignup(BaseModel):
+    """Schema for organization signup (creates tenant and admin user)"""
+    # Organization (Tenant) Information
+    organization_name: str = Field(..., min_length=2, max_length=255, description="Organization name")
+    subdomain: Optional[str] = Field(None, pattern=r"^[a-z0-9-]+$", max_length=63, description="Optional subdomain for organization")
+    
+    # Admin User Information
+    admin_email: EmailStr = Field(..., description="Admin user email")
+    admin_username: str = Field(..., min_length=3, max_length=50, description="Admin username")
+    admin_password: str = Field(..., min_length=8, description="Admin password")
+    
+    # Optional Configuration
+    llm_provider: str = Field(default="openai", description="LLM provider")
+    llm_model: str = Field(default="gpt-3.5-turbo", description="LLM model")
+
+
 class UserLogin(BaseModel):
     """Schema for user login"""
     email: EmailStr
@@ -48,19 +64,29 @@ class TokenResponse(BaseModel):
     tenant: "TenantResponse"
 
 
+class OrganizationSignupResponse(BaseModel):
+    """Schema for organization signup response"""
+    message: str
+    tenant: "TenantResponse"
+    admin_user: UserResponse
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
 # Tenant schemas
 class TenantCreate(BaseModel):
     """Schema for creating new tenant"""
     name: str = Field(..., min_length=2, max_length=255)
-    subdomain: Optional[str] = Field(None, regex=r"^[a-z0-9-]+$", max_length=63)
+    subdomain: Optional[str] = Field(None, pattern=r"^[a-z0-9-]+$", max_length=63)
     llm_provider: str = Field(default="openai")
-    llm_model: str = Field(default="gpt-3.5-turbo")
+    llm_model: str = Field(default="gpy-4.1-nano")
 
 
 class TenantUpdate(BaseModel):
     """Schema for updating tenant"""
     name: Optional[str] = Field(None, min_length=2, max_length=255)
-    subdomain: Optional[str] = Field(None, regex=r"^[a-z0-9-]+$", max_length=63)
+    subdomain: Optional[str] = Field(None, pattern=r"^[a-z0-9-]+$", max_length=63)
     llm_provider: Optional[str] = None
     llm_model: Optional[str] = None
     embedding_model: Optional[str] = None

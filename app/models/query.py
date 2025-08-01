@@ -53,7 +53,7 @@ class Query(Base):
     conversation_turn = Column(Integer, default=1)
     
     # Metadata
-    metadata = Column(JSONB, default=dict)
+    query_metadata = Column(JSONB, default=dict)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)

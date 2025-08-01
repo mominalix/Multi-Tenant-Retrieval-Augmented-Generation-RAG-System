@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.schemas.auth import (
     UserCreate, UserLogin, UserResponse, TokenResponse,
+    OrganizationSignup, OrganizationSignupResponse,
     TenantCreate, TenantResponse, TenantUpdate, TenantStats
 )
 from app.dependencies import (
@@ -22,6 +23,87 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+@router.post("/signup", response_model=OrganizationSignupResponse)
+async def organization_signup(
+    signup_data: OrganizationSignup,
+    db: DatabaseDep,
+    auth_service: AuthServiceDep,
+    tenant_service: TenantServiceDep
+):
+    """
+    Sign up for a new organization (creates tenant and admin user)
+    """
+    try:
+        # Check if subdomain is available if provided
+        if signup_data.subdomain:
+            existing_tenant = db.query(Tenant).filter(
+                Tenant.subdomain == signup_data.subdomain
+            ).first()
+            if existing_tenant:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Subdomain already exists"
+                )
+        
+        # Check if admin email already exists across all tenants
+        existing_user = db.query(TenantUser).filter(
+            TenantUser.email == signup_data.admin_email
+        ).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Create tenant
+        tenant = tenant_service.create_tenant(
+            db=db,
+            name=signup_data.organization_name,
+            subdomain=signup_data.subdomain,
+            llm_provider=signup_data.llm_provider,
+            llm_model=signup_data.llm_model
+        )
+        
+        # Create admin user for the tenant
+        admin_user = auth_service.create_user(
+            db=db,
+            tenant_id=str(tenant.id),
+            email=signup_data.admin_email,
+            username=signup_data.admin_username,
+            password=signup_data.admin_password,
+            role="admin"
+        )
+        
+        # Generate access token for immediate login
+        access_token = auth_service.create_access_token(
+            user_id=str(admin_user.id),
+            tenant_id=str(tenant.id),
+            email=admin_user.email,
+            role=admin_user.role,
+            permissions=["read", "write", "delete", "manage"]
+        )
+        
+        logger.info(f"Organization signup completed: {signup_data.organization_name} with admin {signup_data.admin_email}")
+        
+        return OrganizationSignupResponse(
+            message="Organization created successfully",
+            tenant=TenantResponse.model_validate(tenant),
+            admin_user=UserResponse.model_validate(admin_user),
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=settings.jwt_expire_minutes * 60
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Organization signup failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Signup failed"
+        )
 
 
 @router.post("/register", response_model=UserResponse)

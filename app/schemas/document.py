@@ -31,7 +31,7 @@ class DocumentResponse(BaseModel):
     word_count: int
     collection_name: Optional[str]
     embedding_model: Optional[str]
-    metadata: Dict[str, Any]
+    doc_metadata: Dict[str, Any]
     tags: List[str]
     uploaded_at: datetime
     processed_at: Optional[datetime]
@@ -77,7 +77,7 @@ class DocumentChunkResponse(BaseModel):
     vector_id: Optional[str]
     embedding_model: Optional[str]
     embedding_dimension: Optional[int]
-    metadata: Dict[str, Any]
+    doc_metadata: Dict[str, Any]
     created_at: datetime
     
     class Config:
@@ -102,7 +102,7 @@ class DocumentSearchResult(BaseModel):
     source: str
     page_number: Optional[int]
     chunk_index: int
-    metadata: Dict[str, Any]
+    doc_metadata: Dict[str, Any]
 
 
 class DocumentSearchResponse(BaseModel):

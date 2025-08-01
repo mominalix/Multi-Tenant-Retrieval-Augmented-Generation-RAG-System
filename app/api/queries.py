@@ -24,6 +24,114 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/queries", tags=["Queries & RAG"])
 
 
+@router.get("/debug/vector-status")
+async def debug_vector_status(
+    current_user: CurrentUserDep,
+    current_tenant: CurrentTenantDep,
+    vector_service: VectorServiceDep
+):
+    """
+    Debug endpoint to check vector store status
+    """
+    try:
+        # Check collection status
+        collection_exists = await vector_service.init_collection()
+        
+        # Get collection info
+        from qdrant_client.http import models
+        collection_info = await vector_service.async_client.get_collection("multi_tenant_documents")
+        
+        # Count documents for this tenant
+        from qdrant_client.http.models import Filter, FieldCondition, MatchValue
+        search_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="tenant_id",
+                    match=MatchValue(value=str(current_tenant.id))
+                )
+            ]
+        )
+        
+        # Get document count
+        scroll_result = await vector_service.async_client.scroll(
+            collection_name="multi_tenant_documents",
+            scroll_filter=search_filter,
+            limit=1000,
+            with_payload=True,
+            with_vectors=False
+        )
+        
+        documents = scroll_result[0] if scroll_result else []
+        
+        return {
+            "collection_exists": collection_exists,
+            "total_vectors": collection_info.vectors_count,
+            "tenant_documents": len(documents),
+            "tenant_id": str(current_tenant.id),
+            "sample_documents": [
+                {
+                    "id": doc.id,
+                    "document_id": doc.payload.get("document_id"),
+                    "source": doc.payload.get("source", "")[:50] + "..." if doc.payload.get("source") else None
+                }
+                for doc in documents[:5]  # Show first 5 documents
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Debug vector status failed: {e}")
+        return {
+            "error": str(e),
+            "collection_exists": False,
+            "tenant_documents": 0
+        }
+
+
+@router.get("/debug/search-test")
+async def debug_search_test(
+    query: str = "test",
+    max_chunks: int = 5,
+    score_threshold: float = 0.3,
+    current_user: CurrentUserDep = None,
+    current_tenant: CurrentTenantDep = None,
+    vector_service: VectorServiceDep = None,
+    embedding_service: EmbeddingServiceDep = None
+):
+    """
+    Debug endpoint to test search functionality
+    """
+    try:
+        # Generate embedding for the query
+        query_embedding = await embedding_service.embed_text(query)
+        
+        # Perform search
+        search_results = await vector_service.search_documents(
+            tenant_id=str(current_tenant.id),
+            query_embedding=query_embedding,
+            limit=max_chunks,
+            score_threshold=score_threshold,
+            filter_conditions=None
+        )
+        
+        return {
+            "query": query,
+            "tenant_id": str(current_tenant.id),
+            "embedding_dimension": len(query_embedding),
+            "score_threshold": score_threshold,
+            "results_found": len(search_results),
+            "results": search_results[:3] if search_results else [],  # Show first 3 results
+            "all_scores": [r.get("score", 0) for r in search_results] if search_results else []
+        }
+        
+    except Exception as e:
+        logger.error(f"Debug search test failed: {e}")
+        return {
+            "error": str(e),
+            "query": query,
+            "results_found": 0
+        }
+
+
 @router.post("/rag", response_model=RAGResponse)
 async def generate_rag_response(
     rag_request: RAGRequest,
@@ -64,14 +172,14 @@ async def generate_rag_response(
         
         for result in search_results:
             context_doc = ContextDocument(
-                chunk_id=result["id"],
-                document_id=result["document_id"],
+                chunk_id=str(result["id"]) if result["id"] else str(uuid4()),
+                document_id=str(result["document_id"]) if result["document_id"] else str(uuid4()),
                 score=result["score"],
                 text=result["text"],
-                source=result["source"],
+                source=result.get("source") or result.get("metadata", {}).get("filename") or "Unknown",
                 page_number=result.get("page_number"),
                 chunk_index=result["chunk_index"],
-                metadata=result["metadata"]
+                doc_metadata=result["metadata"]
             )
             context_documents.append(context_doc)
             context_text_parts.append(result["text"])
@@ -106,7 +214,7 @@ async def generate_rag_response(
             processing_time_ms=processing_time,
             status="completed",
             retrieved_chunks_count=len(context_documents),
-            retrieved_documents=[doc.document_id for doc in context_documents],
+            retrieved_documents=[str(doc.document_id) for doc in context_documents],
             similarity_threshold=rag_request.score_threshold,
             llm_provider=llm_provider,
             llm_model=llm_model,
@@ -116,7 +224,7 @@ async def generate_rag_response(
             estimated_cost=0.0,  # Would calculate based on provider pricing
             session_id=rag_request.session_id,
             conversation_turn=rag_request.conversation_turn,
-            metadata={"rag_request": rag_request.dict()}
+            query_metadata={"rag_request": rag_request.model_dump(mode='json')}
         )
         
         db.add(query_record)
@@ -176,7 +284,7 @@ async def generate_rag_response(
                 query_type="rag",
                 processing_time_ms=(time.time() - start_time) * 1000,
                 status="failed",
-                metadata={"error": str(e), "rag_request": rag_request.dict()}
+                query_metadata={"error": str(e), "rag_request": rag_request.model_dump(mode='json')}
             )
             db.add(failed_query)
             db.commit()
@@ -224,7 +332,7 @@ async def generate_rag_response_stream(
                 "source": result["source"],
                 "page_number": result.get("page_number"),
                 "chunk_index": result["chunk_index"],
-                "metadata": result["metadata"]
+                "doc_metadata": result["metadata"]
             }
             for result in search_results
         ]

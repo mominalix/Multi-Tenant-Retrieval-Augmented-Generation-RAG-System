@@ -2,8 +2,8 @@
 Configuration settings for the Multi-Tenant RAG System
 """
 from functools import lru_cache
-from typing import List, Optional
-from pydantic import Field
+from typing import List, Optional, Union
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     embedding_dimension: int = Field(default=384, env="EMBEDDING_DIMENSION")
     
     # Security
-    allowed_hosts: List[str] = Field(
+    allowed_hosts: Union[List[str], str] = Field(
         default=["localhost", "127.0.0.1", "0.0.0.0"], 
         env="ALLOWED_HOSTS"
     )
@@ -50,10 +50,24 @@ class Settings(BaseSettings):
     # File Upload
     max_file_size_mb: int = Field(default=10, env="MAX_FILE_SIZE_MB")
     upload_dir: str = Field(default="./uploads", env="UPLOAD_DIR")
-    allowed_file_types: List[str] = Field(
+    allowed_file_types: Union[List[str], str] = Field(
         default=["pdf", "txt", "docx"], 
         env="ALLOWED_FILE_TYPES"
     )
+    
+    @field_validator('allowed_hosts', mode='before')
+    @classmethod
+    def parse_allowed_hosts(cls, v):
+        if isinstance(v, str):
+            return [host.strip() for host in v.split(',') if host.strip()]
+        return v
+    
+    @field_validator('allowed_file_types', mode='before')
+    @classmethod
+    def parse_allowed_file_types(cls, v):
+        if isinstance(v, str):
+            return [file_type.strip() for file_type in v.split(',') if file_type.strip()]
+        return v
     
     # Logging
     log_level: str = Field(default="INFO", env="LOG_LEVEL")

@@ -42,14 +42,14 @@ class RAGRequest(BaseModel):
 
 class ContextDocument(BaseModel):
     """Schema for context document in RAG response"""
-    chunk_id: UUID
-    document_id: UUID
+    chunk_id: str  # Changed from UUID to str for JSON serialization
+    document_id: str  # Changed from UUID to str for JSON serialization
     score: float
     text: str
     source: str
     page_number: Optional[int]
     chunk_index: int
-    metadata: Dict[str, Any]
+    doc_metadata: Dict[str, Any]
 
 
 class RAGResponse(BaseModel):
@@ -108,7 +108,7 @@ class QueryResponse(BaseModel):
     feedback: Optional[str]
     session_id: Optional[str]
     conversation_turn: int
-    metadata: Dict[str, Any]
+    query_metadata: Dict[str, Any]
     created_at: datetime
     
     # Include response if available

@@ -42,7 +42,7 @@ class Document(Base):
     embedding_model = Column(String(100), nullable=True)
     
     # Additional Metadata
-    metadata = Column(JSONB, default=dict)
+    doc_metadata = Column(JSONB, default=dict)
     tags = Column(JSONB, default=list)
     
     # Timestamps
@@ -89,7 +89,7 @@ class DocumentChunk(Base):
     last_similarity_score = Column(Float, nullable=True)
     
     # Metadata
-    metadata = Column(JSONB, default=dict)
+    doc_metadata = Column(JSONB, default=dict)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
