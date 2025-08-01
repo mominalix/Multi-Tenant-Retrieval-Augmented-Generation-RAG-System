@@ -409,6 +409,28 @@ hr {
 *:focus {
     outline: none !important;
 }
+
+/* Delete button styling */
+.delete-btn button {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    padding: 8px 16px !important;
+}
+
+.delete-btn button:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Actions section */
+.actions-section {
+    padding-left: 8px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -505,6 +527,22 @@ class APIClient:
         response = self.session.get(f"{self.base_url}/tenant/info")
         response.raise_for_status()
         return response.json()
+    
+    def delete_document(self, document_id: str) -> Dict:
+        """Delete document by ID"""
+        try:
+            response = self.session.delete(f"{self.base_url}/documents/{document_id}")
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                raise Exception("Document not found")
+            elif e.response.status_code == 403:
+                raise Exception("Permission denied")
+            else:
+                raise Exception(f"HTTP {e.response.status_code}: {e.response.text}")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Connection error: {str(e)}")
 
 
 def initialize_session_state():
@@ -800,18 +838,74 @@ def document_management():
     # Document list
     st.markdown("### Your Documents")
     
+    # Document management info and bulk actions
+    with st.expander("Document Management Info & Bulk Actions"):
+        st.markdown("""
+        **Document Management:**
+        - **Upload**: Add new documents in PDF, TXT, or DOCX format
+        - **Processing**: Documents are automatically processed for RAG queries
+        - **Delete**: Remove documents and all associated data (irreversible)
+        - **Status**: Monitor processing progress and document health
+        """)
+        
+        st.markdown("**Bulk Actions:**")
+        col_filter, col_actions = st.columns([2, 2])
+        
+        with col_filter:
+            status_filter = st.selectbox(
+                "Filter by Status",
+                ["All", "pending", "processing", "processed", "failed"],
+                help="Filter documents by their current status"
+            )
+        
+        with col_actions:
+            st.markdown("<br>", unsafe_allow_html=True)  # Add some spacing
+            if st.button("Refresh List", use_container_width=True):
+                st.rerun()
+            
+            # API connection test
+            if st.button("Test API Connection", use_container_width=True):
+                try:
+                    with st.spinner("Testing API connection..."):
+                        # Test with tenant info call
+                        tenant_info = st.session_state.api_client.get_tenant_info()
+                        st.success("✅ API connection working!")
+                        st.write(f"Connected to: {tenant_info['name']}")
+                except Exception as e:
+                    st.error(f"❌ API connection failed: {str(e)}")
+                    st.write(f"API URL: {st.session_state.api_client.base_url}")
+                    st.write("Check if the backend server is running.")
+    
     try:
         with st.spinner("Loading documents..."):
+            # Apply status filter if selected
+            filter_param = None if status_filter == "All" else status_filter
             docs_response = st.session_state.api_client.list_documents()
         
         documents = docs_response["documents"]
         
+        # Filter documents client-side if needed
+        if status_filter != "All":
+            documents = [doc for doc in documents if doc['status'] == status_filter]
+        
+        # Display document count
+        total_docs = len(docs_response["documents"])
+        filtered_docs = len(documents)
+        
+        if status_filter == "All":
+            st.markdown(f"**Total Documents:** {total_docs}")
+        else:
+            st.markdown(f"**Showing:** {filtered_docs} of {total_docs} documents (Status: {status_filter})")
+        
         if not documents:
-            st.info("No documents uploaded yet.")
+            if status_filter == "All":
+                st.info("No documents uploaded yet. Upload your first document above to get started!")
+            else:
+                st.info(f"No documents found with status '{status_filter}'. Try changing the filter or upload new documents.")
         else:
             for doc in documents:
-                with st.expander(f"📄 {doc['original_filename']} ({doc['status']})"):
-                    col1, col2 = st.columns(2)
+                with st.expander(f"{doc['original_filename']} ({doc['status']})"):
+                    col1, col2, col3 = st.columns([2, 2, 1])
                     
                     with col1:
                         st.write(f"**Status:** {doc['status']}")
@@ -826,6 +920,29 @@ def document_management():
                         st.write(f"**Word Count:** {doc['word_count']:,}")
                         if doc['tags']:
                             st.write(f"**Tags:** {', '.join(doc['tags'])}")
+                    
+                    with col3:
+                        st.write("**Actions:**")
+                        
+                        # Simple delete button - no confirmation
+                        st.markdown('<div class="delete-btn">', unsafe_allow_html=True)
+                        if st.button("Delete", key=f"delete_{doc['id']}", use_container_width=True):
+                            try:
+                                with st.spinner("Deleting document..."):
+                                    # Debug information
+                                    st.write(f"Debug: Deleting document ID: {doc['id']}")
+                                    response = st.session_state.api_client.delete_document(doc['id'])
+                                    st.write(f"Debug: Response: {response}")
+                                
+                                st.success(f"Document '{doc['original_filename']}' deleted successfully!")
+                                time.sleep(2)  # Brief pause to show success message
+                                st.rerun()
+                                
+                            except Exception as e:
+                                st.error(f"Failed to delete document: {str(e)}")
+                                st.write(f"Debug: Document ID was: {doc['id']}")
+                                st.write(f"Debug: API URL: {st.session_state.api_client.base_url}/documents/{doc['id']}")
+                        st.markdown('</div>', unsafe_allow_html=True)
     
     except Exception as e:
         st.error(f"Failed to load documents: {str(e)}")
